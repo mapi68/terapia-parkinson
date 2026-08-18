@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Organizzatore terapia Parkinson</title>
+    <style>
+        :root {
+            --bg: #F4F6F5;
+            --surface: #FFFFFF;
+            --ink: #192A2C;
+            --ink-soft: #52605F;
+            --line: #E0E5E3;
+            --teal: #2F6F6B;
+            --teal-deep: #235451;
+            --teal-wash: #E6F0EE;
+            --shadow: 0 4px 16px rgba(25, 42, 44, 0.08);
+            --radius: 16px;
+            --privacy-bg: #EBF5F4;
+            --privacy-border: #B2DDD9;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #10181A;
+                --surface: #1B2426;
+                --ink: #E9F1EF;
+                --ink-soft: #9FB3B0;
+                --line: #2D3A3C;
+                --teal: #4FA39C;
+                --teal-deep: #7FCFC6;
+                --teal-wash: #1C3433;
+                --shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+                --privacy-bg: #162B29;
+                --privacy-border: #2F5E5A;
+            }
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 40px 20px;
+            font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--ink);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 680px;
+            width: 100%;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 36px 32px;
+        }
+
+        header {
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--line);
+            padding-bottom: 20px;
+        }
+
+        .eyebrow {
+            font-size: 12px;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--teal);
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            font-size: 28px;
+            margin: 0 0 10px 0;
+            color: var(--ink);
+            line-height: 1.2;
+        }
+
+        p.desc {
+            color: var(--ink-soft);
+            font-size: 15px;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .privacy-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            background-color: var(--privacy-bg);
+            border: 1px solid var(--privacy-border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 24px;
+            font-size: 13.5px;
+            line-height: 1.5;
+            color: var(--ink);
+        }
+
+        .privacy-icon {
+            font-size: 18px;
+            line-height: 1;
+            margin-top: 1px;
+        }
+
+        .privacy-text strong {
+            color: var(--teal-deep);
+        }
+
+        .links-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card-link {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            padding: 20px 24px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            text-decoration: none;
+            color: var(--ink);
+            transition: all 0.2s ease;
+        }
+
+        .card-link:hover {
+            border-color: var(--teal);
+            background: var(--teal-wash);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--teal-deep);
+        }
+
+        .card-sub {
+            font-size: 12.5px;
+            font-family: monospace;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: var(--ink-soft);
+        }
+
+        .card-text {
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--ink-soft);
+            margin: 0;
+        }
+
+        footer {
+            margin-top: 32px;
+            padding-top: 20px;
+            border-top: 1px solid var(--line);
+            font-size: 13px;
+            color: var(--ink-soft);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .contact-text {
+            color: var(--ink);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="eyebrow">Navigazione e documentazione</div>
+            <h1>Organizzatore terapia Parkinson</h1>
+            <p class="desc">
+                Benvenuto nel portale dedicato alla gestione dei farmaci e dei dati clinici per la malattia di Parkinson. 
+                Utilizza le schede sottostanti per accedere all'applicazione interattiva, consultare 
+                la documentazione tecnica o visitare il repository ufficiale del codice sorgente.
+            </p>
+        </header>
+
+        <div class="privacy-banner">
+            <span class="privacy-icon">🔒</span>
+            <div class="privacy-text">
+                <strong>Privacy e sicurezza dei dati:</strong> questa applicazione rispetta la tua riservatezza. 
+                Nessun dato personale o sanitario viene inviato o salvato su server esterni: il browser salva automaticamente 
+                le informazioni esclusivamente in locale sul tuo dispositivo (tramite LocalStorage) ed è inoltre possibile esportarle in un file .json.
+            </div>
+        </div>
+
+        <div class="links-grid">
+            <a href="organizzatore_terapia_p.html" class="card-link">
+                <div class="card-header">
+                    <span class="card-title">Applicazione web interattiva</span>
+                    <span class="card-sub">organizzatore_terapia_p.html</span>
+                </div>
+                <p class="card-text">
+                    Strumento completo per la pianificazione e l'organizzazione degli orari di assunzione della terapia farmacologica. 
+                    Consente di configurare dosaggi, impostare promemoria e monitorare l'aderenza terapeutica in totale sicurezza locale.
+                </p>
+            </a>
+
+            <a href="README.md" class="card-link">
+                <div class="card-header">
+                    <span class="card-title">Panoramica e licenza</span>
+                    <span class="card-sub">README.md</span>
+                </div>
+                <p class="card-text">
+                    Consulta le istruzioni per l'uso, il funzionamento del backup e i termini della licenza d'uso: 
+                    tutti i diritti sono riservati, nessun uso commerciale o redistribuzione senza permesso.
+                </p>
+            </a>
+
+            <a href="FEATURES.md" class="card-link">
+                <div class="card-header">
+                    <span class="card-title">Elenco funzionalità in dettaglio</span>
+                    <span class="card-sub">FEATURES.md</span>
+                </div>
+                <p class="card-text">
+                    Il dettaglio completo di ogni funzione dell'app: dosi, diario sintomi, registro cadute, 
+                    cronologia, stampe e comportamento specifico di ciascuna sezione.
+                </p>
+            </a>
+
+            <a href="https://github.com/mapi68/terapia-parkinson" target="_blank" rel="noopener noreferrer" class="card-link">
+                <div class="card-header">
+                    <span class="card-title">Repository GitHub</span>
+                    <span class="card-sub">github.com</span>
+                </div>
+                <p class="card-text">
+                    Accedi alla pagina ufficiale su GitHub per visualizzare il codice sorgente del progetto, segnalare problemi (issue), 
+                    tracciare gli aggiornamenti o contribuire allo sviluppo dell'applicazione.
+                </p>
+            </a>
+        </div>
+
+        <footer>
+            <div>Progetto locale e privato per l'organizzazione e il supporto terapeutico della malattia di Parkinson.</div>
+            <div>Contatto: <span class="contact-text">mapi68 (chiocciola) gmail (punto) com</span></div>
+        </footer>
+    </div>
+</body>
+</html>
