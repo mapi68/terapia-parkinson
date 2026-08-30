@@ -2055,7 +2055,7 @@ function updateClock(){
 /* ── SEZIONE: Intestazione "Oggi" e piano dosi del giorno (Hero) ────────── */
 function renderToday(){
   var badge = document.getElementById("versionBadge");
-  if(badge) badge.textContent = "v0.13.10";
+  if(badge) badge.textContent = "v0.13.11";
   var d=new Date();
   var giorni=["domenica","luned&igrave;","marted&igrave;","mercoled&igrave;","gioved&igrave;","venerd&igrave;","sabato"];
   var mesi=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
@@ -4867,17 +4867,23 @@ function countPrnForMed(dateKey, medId){
 }
 /* ── SEZIONE: Qualità di vita — calcolo indice, stelline, etichette ────── */
 /* Indice di qualità della vita del giorno: un indicatore orientativo, non clinico,
-   calcolato dallo stato motorio peggiore riportato e dai sintomi segnati nel diario quel giorno.
+   calcolato dallo stato motorio peggiore riportato, dai sintomi segnati nel diario
+   e dalle cadute registrate quel giorno.
    Punteggio da 1.0 (giorno molto difficile) a 5.0 (giorno senza problemi riportati). */
 function qualityOfLifeScore(dateKey){
   var entries = diaryEntriesForKey(dateKey);
-  if(!entries.length) return null;
+  var falls = fallsForKey(dateKey);
+  if(!entries.length && !falls.length) return null;
 
   var STATO_IMPACT = { "":0, "on":0, "on_half":-0.7, "on_dis":-1.0, "off":-1.8 };
   var LEVEL_IMPACT = { "1":-0.15, "2":-0.35, "3":-0.65 };
+  var FALL_IMPACT_SEVERE = -0.9; // trauma importante o Pronto Soccorso
+  var FALL_IMPACT_BASE = -0.4;  // ogni altra caduta
+  var FALL_IMPACT_MAX = -2.0;   // limite complessivo, come per i sintomi
 
   var worstStatoImpact = 0;
   var symptomImpact = 0;
+  var fallImpact = 0;
 
   entries.forEach(function(e){
     var si = (e.stato && STATO_IMPACT.hasOwnProperty(e.stato)) ? STATO_IMPACT[e.stato] : 0;
@@ -4889,7 +4895,13 @@ function qualityOfLifeScore(dateKey){
 
   symptomImpact = Math.max(symptomImpact, -2.5); // evita che molti sintomi lievi sprofondino il punteggio in modo sproporzionato
 
-  var score = 5 + worstStatoImpact + symptomImpact;
+  falls.forEach(function(f){
+    var severe = (f.conseguenza === "trauma" || f.conseguenza === "ps");
+    fallImpact += severe ? FALL_IMPACT_SEVERE : FALL_IMPACT_BASE;
+  });
+  fallImpact = Math.max(fallImpact, FALL_IMPACT_MAX); // evita che molte cadute lievi sprofondino il punteggio in modo sproporzionato
+
+  var score = 5 + worstStatoImpact + symptomImpact + fallImpact;
   score = Math.max(1, Math.min(5, score));
   return Math.round(score * 10) / 10;
 }
