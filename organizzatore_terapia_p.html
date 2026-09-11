@@ -156,19 +156,20 @@ function toggleDbPanel(){
   .hero.empty{color:var(--ink-soft);display:block}
 
   /* Tabs */
-  .tabs{display:flex;gap:6px;margin:22px 0 18px;border-bottom:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:center}
+  .tabs{display:flex;gap:6px;margin:22px 0 18px;border-bottom:1px solid var(--line);overflow-x:auto;-webkit-overflow-scrolling:touch;justify-content:center;scrollbar-width:none;-ms-overflow-style:none}
+  .tabs::-webkit-scrollbar{display:none;height:0}
   .tabs .tab{flex:0 0 auto}
   .tab{
   display:inline-flex;align-items:center;
     appearance:none;background:none;border:none;cursor:pointer;
     font:inherit;font-weight:600;font-size:15px;color:var(--ink-soft);
-    padding:10px 14px;border-bottom:2px solid transparent;margin-bottom:-1px;
+    padding:10px 14px;box-shadow:inset 0 -2px 0 0 transparent;
   }
-  .tab[aria-selected="true"]{color:var(--teal-deep);border-bottom-color:var(--teal)}
+  .tab[aria-selected="true"]{color:var(--teal-deep);box-shadow:inset 0 -2px 0 0 var(--teal)}
   .tab:focus-visible{outline:2px solid var(--teal);outline-offset:3px;border-radius:6px}
 
   .tabs-bottom{border-top:1px solid var(--line);border-bottom:none;margin:28px 0 24px;justify-content:center}
-  .tabs-bottom .tab[aria-selected="true"]{border-bottom-color:transparent;border-top:2px solid var(--teal);margin-top:-1px;margin-bottom:0}
+  .tabs-bottom .tab[aria-selected="true"]{box-shadow:inset 0 2px 0 0 var(--teal)}
 
   .scroll-top-btn{
     position:fixed;right:18px;bottom:18px;z-index:40;
@@ -2055,7 +2056,7 @@ function updateClock(){
 /* ── SEZIONE: Intestazione "Oggi" e piano dosi del giorno (Hero) ────────── */
 function renderToday(){
   var badge = document.getElementById("versionBadge");
-  if(badge) badge.textContent = "v0.13.11";
+  if(badge) badge.textContent = "v0.13.13";
   var d=new Date();
   var giorni=["domenica","luned&igrave;","marted&igrave;","mercoled&igrave;","gioved&igrave;","venerd&igrave;","sabato"];
   var mesi=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
