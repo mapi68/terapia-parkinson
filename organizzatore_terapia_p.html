@@ -2056,7 +2056,7 @@ function updateClock(){
 /* ── SEZIONE: Intestazione "Oggi" e piano dosi del giorno (Hero) ────────── */
 function renderToday(){
   var badge = document.getElementById("versionBadge");
-  if(badge) badge.textContent = "v0.13.13";
+  if(badge) badge.textContent = "v0.13.14";
   var d=new Date();
   var giorni=["domenica","luned&igrave;","marted&igrave;","mercoled&igrave;","gioved&igrave;","venerd&igrave;","sabato"];
   var mesi=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
@@ -2491,24 +2491,49 @@ function diaryEntriesAfterDose(dateKey, doseTimeStr, windowHours){
   }
   return entries;
 }
+function prnDosesInWindow(dateKey, offsetMin){
+  var dayLog = (state.prnLog && state.prnLog[dateKey]) ? state.prnLog[dateKey] : {};
+  var meds = medsForDate(dateKey);
+  var out = [];
+  Object.keys(dayLog).forEach(function(medId){
+    var med = meds.filter(function(m){ return m.id===medId; })[0];
+    if(!med) return;
+    (dayLog[medId]||[]).forEach(function(t){
+      if(!t) return;
+      out.push({ med: med, time: t, min: toMinutes(t)+offsetMin, dateKey: dateKey });
+    });
+  });
+  return out;
+}
 function dosesBeforeDiaryEntry(dateKey, entryTimeStr, windowHours){
   windowHours = windowHours || 3;
   var entryMin = toMinutes(entryTimeStr);
   var winStart = entryMin - windowHours*60;
   var schedule = buildSchedule(dateKey).filter(function(it){
     return it.min <= entryMin && it.min >= winStart;
-  }).map(function(it){ return { med: it.med, time: it.time, min: it.min, dateKey: dateKey }; });
+  }).map(function(it){ return { med: it.med, time: it.time, min: it.min, dateKey: dateKey, prn:false }; });
+  schedule = schedule.concat(prnDosesInWindow(dateKey, 0).filter(function(it){
+    return it.min <= entryMin && it.min >= winStart;
+  }).map(function(it){ return { med: it.med, time: it.time, min: it.min, dateKey: dateKey, prn:true }; }));
   if(winStart < 0){
     // la finestra sconfina nel giorno precedente: recupera anche quelle dosi
     var pk = prevDateKey(dateKey);
     buildSchedule(pk).filter(function(it){
       return it.min >= 1440 + winStart;
     }).forEach(function(it){
-      schedule.push({ med: it.med, time: it.time, min: it.min-1440, dateKey: pk });
+      schedule.push({ med: it.med, time: it.time, min: it.min-1440, dateKey: pk, prn:false });
+    });
+    prnDosesInWindow(pk, -1440).filter(function(it){
+      return it.min >= winStart;
+    }).forEach(function(it){
+      schedule.push({ med: it.med, time: it.time, min: it.min, dateKey: pk, prn:true });
     });
   }
   schedule.sort(function(a,b){ return a.min-b.min; });
   return schedule.map(function(it){
+    if(it.prn){
+      return { med: it.med, time: it.time, status: "prn", lateMin: 0, takenAt: it.time };
+    }
     var tk = (state.taken && state.taken[it.dateKey]) ? state.taken[it.dateKey] : {};
     var did = doseId(it.med.id, it.time);
     var takenVal = tk[did];
@@ -2528,7 +2553,8 @@ function dosesBeforeDiaryHtml(dateKey, entryTimeStr){
   var STATUS_STYLE = {
     onTime: { color:"var(--teal)", bg:"var(--teal-wash)", label:function(d){ return "puntuale"; } },
     late:   { color:"#b8720f", bg:"var(--amber-wash,#fdf1de)", label:function(d){ return "in ritardo di "+d.lateMin+" min"; } },
-    missed: { color:"var(--red,#c0392b)", bg:"rgba(192,57,43,.1)", label:function(){ return "non risulta presa"; } }
+    missed: { color:"var(--red,#c0392b)", bg:"rgba(192,57,43,.1)", label:function(){ return "non risulta presa"; } },
+    prn:    { color:"var(--teal-deep)", bg:"var(--teal-wash)", label:function(){ return "al bisogno"; } }
   };
   var pills = doses.map(function(d){
     var st = STATUS_STYLE[d.status];
@@ -2546,7 +2572,8 @@ function dosesBeforeDiaryPrintHtml(dateKey, entryTimeStr){
   var STATUS_LABEL = {
     onTime: function(){ return "puntuale"; },
     late: function(d){ return "in ritardo di "+d.lateMin+" min"; },
-    missed: function(){ return "non presa"; }
+    missed: function(){ return "non presa"; },
+    prn: function(){ return "al bisogno"; }
   };
   var txt = doses.map(function(d){
     return esc(d.time)+' '+esc(d.med.brand)+' ('+STATUS_LABEL[d.status](d)+')';
