@@ -2056,7 +2056,7 @@ function updateClock(){
 /* ── SEZIONE: Intestazione "Oggi" e piano dosi del giorno (Hero) ────────── */
 function renderToday(){
   var badge = document.getElementById("versionBadge");
-  if(badge) badge.textContent = "v0.13.15";
+  if(badge) badge.textContent = "v0.13.18";
   var d=new Date();
   var giorni=["domenica","luned&igrave;","marted&igrave;","mercoled&igrave;","gioved&igrave;","venerd&igrave;","sabato"];
   var mesi=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
@@ -4837,6 +4837,25 @@ function toggleHistCustomPanel(){
     if(tEl && !tEl.value) tEl.value = dateKeyFromDate(end);
   }
 }
+function hasRealEntries(obj){
+  if(!obj) return false;
+  if(Array.isArray(obj)) return obj.length>0;
+  if(typeof obj==="object") return Object.keys(obj).length>0;
+  return false;
+}
+function firstDataKeyInRange(startKey, endKey){
+  var found = null;
+  function scan(store){
+    if(!store) return;
+    Object.keys(store).forEach(function(k){
+      if(k<startKey || k>endKey) return;
+      if(!hasRealEntries(store[k])) return;
+      if(!found || k<found) found = k;
+    });
+  }
+  scan(state.taken); scan(state.diary); scan(state.falls); scan(state.prnLog);
+  return found;
+}
 function applyHistCustomRange(){
   var fromVal = document.getElementById("hist-custom-from").value;
   var toVal = document.getElementById("hist-custom-to").value;
@@ -4845,6 +4864,11 @@ function applyHistCustomRange(){
   var end=new Date(toVal); end.setHours(0,0,0,0);
   if(end < start){ alert("La data finale deve essere successiva o uguale a quella iniziale."); return; }
   if(end > realTodayMidnight()){ alert("La data finale non può essere nel futuro."); return; }
+  var startKey = dateKeyFromDate(start), endKey = dateKeyFromDate(end);
+  var firstData = firstDataKeyInRange(startKey, endKey);
+  if(firstData && firstData > startKey){
+    start = new Date(firstData+"T00:00:00");
+  }
   var diffDays = Math.round((end-start)/86400000)+1;
   if(diffDays > 366){ alert("L'intervallo massimo è di 366 giorni."); return; }
   histRange = diffDays;
@@ -5370,7 +5394,7 @@ function renderChart(){
       +' ontouchstart="touchChartTip(event,\''+esc(tip).replace(/'/g,"\\'")+'\')"/>';
 
     if(n<=14 || i===0 || i===n-1 || (i%Math.ceil(n/7)===0)){
-      svg+='<text x="'+(x+barW/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="8.5" fill="currentColor" opacity=".5">'+r.day+'/'+r.month+'</text>';
+      svg+='<text x="'+(x+barW/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="8.5" fill="currentColor" opacity=".5">'+(r.dow?r.dow+' ':'')+r.day+'/'+r.month+'</text>';
     }
   });
 
@@ -5397,7 +5421,7 @@ function renderTrendChart(){
 
   var buckets=rows.map(function(r){
     var taken=Math.min(r.taken, r.expected), expected=r.expected;
-    var label=r.day+'/'+r.month;
+    var label=(r.dow?r.dow+' ':'')+r.day+'/'+r.month;
     return { label:label, tip:label, taken:taken, expected:expected };
   });
 
@@ -5552,7 +5576,7 @@ function symptomDaysData(symKey, days){
         if(!s.livello && maxLevel<1) maxLevel=1; // sintomo segnato ma senza livello: conta come presente
       });
     });
-    rows.push({ key:key, day:d.getDate(), month:pad(d.getMonth()+1), level:maxLevel, isToday:(key===todayKey) });
+    rows.push({ key:key, day:d.getDate(), month:pad(d.getMonth()+1), dow:giorni[d.getDay()], level:maxLevel, isToday:(key===todayKey) });
   }
   return rows;
 }
@@ -5571,7 +5595,7 @@ function renderQolChart(){
     var key=dateKeyFromDate(d);
     if(key===todayKey) continue; // oggi escluso, come negli altri due grafici
     var qol=qualityOfLifeScore(key);
-    rows.push({ key:key, day:d.getDate(), month:pad(d.getMonth()+1), qol:qol });
+    rows.push({ key:key, day:d.getDate(), month:pad(d.getMonth()+1), dow:giorni[d.getDay()], qol:qol });
   }
   var hasData = rows.some(function(r){ return r.qol!==null; });
 
@@ -5621,13 +5645,13 @@ function renderQolChart(){
     if(r.qol===null) return;
     var x=padL+step*i;
     var y=yFor(r.qol);
-    var tip=r.day+'/'+r.month+': '+r.qol.toFixed(1)+'/5 \u00b7 '+esc(qolLabel(r.qol));
+    var tip=r.dow+' '+r.day+'/'+r.month+': '+r.qol.toFixed(1)+'/5 \u00b7 '+esc(qolLabel(r.qol));
     svg+='<circle class="chart-pt" cx="'+x+'" cy="'+y+'" r="7" fill="transparent"'
       +' onmouseenter="showChartTip(event,\''+tip.replace(/'/g,"\\'")+'\')" onmousemove="moveChartTip(event)" onmouseleave="hideChartTip()"'
       +' ontouchstart="touchChartTip(event,\''+tip.replace(/'/g,"\\'")+'\')"/>';
     svg+='<circle cx="'+x+'" cy="'+y+'" r="3.5" fill="'+QOL_COLOR(r.qol)+'" style="pointer-events:none"/>';
     if(n<=14 || i===0 || i===n-1 || (i%Math.ceil(n/7)===0)){
-      svg+='<text x="'+x+'" y="'+(H-2)+'" text-anchor="middle" font-size="8.5" fill="currentColor" opacity=".5">'+r.day+'/'+r.month+'</text>';
+      svg+='<text x="'+x+'" y="'+(H-2)+'" text-anchor="middle" font-size="8.5" fill="currentColor" opacity=".5">'+r.dow+' '+r.day+'/'+r.month+'</text>';
     }
   });
 
@@ -5695,7 +5719,7 @@ function renderSymptomChart(){
   rows.forEach(function(r, i){
     var x=padL+gap+(barW+gap)*i;
     var lvlLabel = r.level>0 ? (LIVELLI[String(r.level)]||"") : "Assente";
-    var tip=r.day+'/'+r.month+' \u00b7 '+esc(SINTOMI[symKey])+': '+lvlLabel;
+    var tip=r.dow+' '+r.day+'/'+r.month+' \u00b7 '+esc(SINTOMI[symKey])+': '+lvlLabel;
     if(r.level>0){
       var barH=Math.round(innerH*(LEVEL_Y[r.level]/3));
       var y=padT+innerH-barH;
@@ -5708,7 +5732,7 @@ function renderSymptomChart(){
         +' ontouchstart="touchChartTip(event,\''+tip.replace(/'/g,"\\'")+'\')"/>';
     }
     if(n<=14 || i===0 || i===n-1 || (i%Math.ceil(n/7)===0)){
-      svg+='<text x="'+(x+barW/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="8.5" fill="currentColor" opacity=".5">'+r.day+'/'+r.month+'</text>';
+      svg+='<text x="'+(x+barW/2)+'" y="'+(H-2)+'" text-anchor="middle" font-size="8.5" fill="currentColor" opacity=".5">'+r.dow+' '+r.day+'/'+r.month+'</text>';
     }
   });
 
