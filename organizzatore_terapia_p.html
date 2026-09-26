@@ -877,6 +877,7 @@ function toggleDbPanel(){
       <button class="subtab" id="hsub-days" role="tab" aria-selected="false" onclick="switchHistorySubtab('days')">Giorno per giorno</button>
       <button class="subtab" id="hsub-actives" role="tab" aria-selected="false" onclick="switchHistorySubtab('actives')">Principi attivi assunti</button>
       <button class="subtab" id="hsub-compare" role="tab" aria-selected="false" onclick="switchHistorySubtab('compare')">Confronto periodi</button>
+      <button class="subtab" id="hsub-prn" role="tab" aria-selected="false" onclick="switchHistorySubtab('prn')">Al bisogno</button>
     </div>
     <div id="hview-charts">
       <div id="trendChartHost"></div>
@@ -895,6 +896,11 @@ function toggleDbPanel(){
     </div>
     <div id="hview-compare" style="display:none">
       <div id="periodCompareHost"></div>
+    </div>
+    <div id="hview-prn" style="display:none">
+      <div id="prnHistFilterHost" class="no-print" style="margin-bottom:12px"></div>
+      <div id="prnHistSummaryHost"></div>
+      <div id="prnHistListHost"></div>
     </div>
     <div id="historySafetyHost"></div>
   </section>
@@ -1570,6 +1576,10 @@ var CONSEGUENZE_CADUTA = {
   ps:"Portato al Pronto Soccorso"
 };
 
+function prnTime(e){ return (typeof e==="string") ? e : (e && e.t) || ""; }
+function prnMotivo(e){ return (typeof e==="string") ? "" : (e && e.m) || ""; }
+function prnMotivoLabel(e){ var m=prnMotivo(e); return m ? (SINTOMI[m]||m) : ""; }
+
 var SINTOMI = {
   tremore:"Tremore",
   rigidita:"Rigidit\u00e0",
@@ -2056,7 +2066,7 @@ function updateClock(){
 /* ── SEZIONE: Intestazione "Oggi" e piano dosi del giorno (Hero) ────────── */
 function renderToday(){
   var badge = document.getElementById("versionBadge");
-  if(badge) badge.textContent = "v0.13.18";
+  if(badge) badge.textContent = "v0.13.19";
   var d=new Date();
   var giorni=["domenica","luned&igrave;","marted&igrave;","mercoled&igrave;","gioved&igrave;","venerd&igrave;","sabato"];
   var mesi=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
@@ -2314,8 +2324,9 @@ function renderTimeline(){
       html += '</div>';
       if(done){
         html += '<div class="done-time" style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">Orari: '
-          + log.map(function(t, idx){
-              return '<span class="pill" style="background:var(--green-wash);color:var(--green);gap:4px">'+esc(t)
+          + log.map(function(e, idx){
+              var t=prnTime(e), ml=prnMotivoLabel(e);
+              return '<span class="pill" style="background:var(--green-wash);color:var(--green);gap:4px" title="'+(ml?esc(ml):'Motivo non specificato')+'">'+esc(t)+(ml?' &middot; '+esc(ml):'')
                 +' <button type="button" onclick="removePrnDoseAt(\''+med.id+'\','+idx+')" aria-label="Rimuovi la presa delle '+esc(t)+'" style="background:none;border:none;color:inherit;font-weight:700;cursor:pointer;padding:0;line-height:1;font-size:14px">&times;</button></span>';
             }).join(' ')
           + '</div>';
@@ -2324,6 +2335,14 @@ function renderTimeline(){
       html += '<div class="dose-time-panel">';
       html += '<label>'+(done?'Nuova presa':'Preso alle')+'</label>';
       html += '<input type="time" id="'+tpId+'" value="'+nowVal+'" onkeydown="if(event.key===\'Enter\') logPrnDose(\''+med.id+'\')">';
+      html += '<select id="prn_motivo_'+med.id+'" style="margin-left:6px" aria-label="Motivo dell\'assunzione">';
+      html += '<option value="">Motivo</option>';
+      SINTOMI_CATEGORIE.forEach(function(cat){
+        html += '<optgroup label="'+esc(cat.titolo)+'">';
+        cat.chiavi.forEach(function(mk){ html += '<option value="'+mk+'">'+esc(SINTOMI[mk])+'</option>'; });
+        html += '</optgroup>';
+      });
+      html += '</select>';
       html += '<button class="btn-tp" onclick="logPrnDose(\''+med.id+'\')">'+(done?'&#10003; Aggiungi':'&#10003; Preso')+'</button>';
       html += '</div>';
       html += '</div>';
@@ -2345,7 +2364,9 @@ function logPrnDose(medId){
   var inp = document.getElementById(tpId);
   var now = new Date();
   var val = (inp && inp.value) ? inp.value : (pad(now.getHours())+":"+pad(now.getMinutes()));
-  state.prnLog[dk][medId].push(val);
+  var motivoSel = document.getElementById('prn_motivo_'+medId);
+  var motivo = (motivoSel && motivoSel.value) ? motivoSel.value : "";
+  state.prnLog[dk][medId].push({ t: val, m: motivo });
   saveState();
   renderTimeline();
 }
@@ -2498,9 +2519,10 @@ function prnDosesInWindow(dateKey, offsetMin){
   Object.keys(dayLog).forEach(function(medId){
     var med = meds.filter(function(m){ return m.id===medId; })[0];
     if(!med) return;
-    (dayLog[medId]||[]).forEach(function(t){
+    (dayLog[medId]||[]).forEach(function(e){
+      var t=prnTime(e);
       if(!t) return;
-      out.push({ med: med, time: t, min: toMinutes(t)+offsetMin, dateKey: dateKey });
+      out.push({ med: med, time: t, min: toMinutes(t)+offsetMin, dateKey: dateKey, motivo: prnMotivoLabel(e) });
     });
   });
   return out;
@@ -2514,7 +2536,7 @@ function dosesBeforeDiaryEntry(dateKey, entryTimeStr, windowHours){
   }).map(function(it){ return { med: it.med, time: it.time, min: it.min, dateKey: dateKey, prn:false }; });
   schedule = schedule.concat(prnDosesInWindow(dateKey, 0).filter(function(it){
     return it.min <= entryMin && it.min >= winStart;
-  }).map(function(it){ return { med: it.med, time: it.time, min: it.min, dateKey: dateKey, prn:true }; }));
+  }).map(function(it){ return { med: it.med, time: it.time, min: it.min, dateKey: dateKey, prn:true, motivo: it.motivo }; }));
   if(winStart < 0){
     // la finestra sconfina nel giorno precedente: recupera anche quelle dosi
     var pk = prevDateKey(dateKey);
@@ -2526,13 +2548,13 @@ function dosesBeforeDiaryEntry(dateKey, entryTimeStr, windowHours){
     prnDosesInWindow(pk, -1440).filter(function(it){
       return it.min >= winStart;
     }).forEach(function(it){
-      schedule.push({ med: it.med, time: it.time, min: it.min, dateKey: pk, prn:true });
+      schedule.push({ med: it.med, time: it.time, min: it.min, dateKey: pk, prn:true, motivo: it.motivo });
     });
   }
   schedule.sort(function(a,b){ return a.min-b.min; });
   return schedule.map(function(it){
     if(it.prn){
-      return { med: it.med, time: it.time, status: "prn", lateMin: 0, takenAt: it.time };
+      return { med: it.med, time: it.time, status: "prn", lateMin: 0, takenAt: it.time, motivo: it.motivo };
     }
     var tk = (state.taken && state.taken[it.dateKey]) ? state.taken[it.dateKey] : {};
     var did = doseId(it.med.id, it.time);
@@ -2558,7 +2580,8 @@ function dosesBeforeDiaryHtml(dateKey, entryTimeStr){
   };
   var pills = doses.map(function(d){
     var st = STATUS_STYLE[d.status];
-    return '<span class="pill" style="background:'+st.bg+';color:'+st.color+';margin:0 5px 5px 0" title="'+esc(d.time)+' &middot; '+esc(nameWithStrength(d.med))+'">'
+    var extra = (d.status==="prn" && d.motivo) ? ' &middot; '+esc(d.motivo) : '';
+    return '<span class="pill" style="background:'+st.bg+';color:'+st.color+';margin:0 5px 5px 0" title="'+esc(d.time)+' &middot; '+esc(nameWithStrength(d.med))+extra+'">'
       + esc(d.time)+' '+esc(d.med.brand)+' &middot; '+st.label(d)+'</span>';
   }).join('');
   return '<div class="diary-doses" style="margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)">'
@@ -4526,7 +4549,7 @@ function saveMed(editId){
 /* ── SEZIONE: Navigazione tab principali e sottoschede di Cronologia ───── */
 var HISTORY_SUBTAB_KEY = "parkinson_terapia_history_subtab";
 function switchHistorySubtab(which){
-  ["charts","days","actives","compare"].forEach(function(t){
+  ["charts","days","actives","compare","prn"].forEach(function(t){
     var view=document.getElementById("hview-"+t);
     if(view) view.style.display = (t===which)?"block":"none";
     var btn=document.getElementById("hsub-"+t);
@@ -4538,7 +4561,7 @@ function restoreHistorySubtab(){
   var which="charts";
   try{
     var v=localStorage.getItem(HISTORY_SUBTAB_KEY);
-    if(v==="charts"||v==="days"||v==="actives"||v==="compare") which=v;
+    if(v==="charts"||v==="days"||v==="actives"||v==="compare"||v==="prn") which=v;
   }catch(e){}
   switchHistorySubtab(which);
 }
@@ -5827,6 +5850,7 @@ function renderHistory(){
     document.getElementById("hview-days").style.display="none";
     document.getElementById("hview-actives").style.display="none";
     document.getElementById("hview-compare").style.display="none";
+    document.getElementById("hview-prn").style.display="none";
     document.getElementById("historySafetyHost").innerHTML="";
     if(emptyHost) emptyHost.innerHTML='<div class="empty-state"><strong>Nessuna terapia da analizzare</strong>'
       +'Aggiungi i farmaci nella scheda <b>Farmaci</b>: da quel momento le spunte verranno registrate qui.</div>';
@@ -5841,6 +5865,7 @@ function renderHistory(){
     document.getElementById("hview-days").style.display="none";
     document.getElementById("hview-actives").style.display="none";
     document.getElementById("hview-compare").style.display="none";
+    document.getElementById("hview-prn").style.display="none";
     document.getElementById("historySafetyHost").innerHTML="";
     if(emptyHost) emptyHost.innerHTML='<div class="empty-state"><strong>Ancora nessuna spunta registrata</strong>'
       +'Quando inizierai a segnare le dosi prese, qui vedrai il riepilogo degli ultimi giorni.</div>';
@@ -5937,6 +5962,7 @@ function renderHistory(){
   renderSymptomChart();
   renderQolChart();
   renderWeekdayChart();
+  renderPrnHistory(data);
 }
 window.addEventListener("resize", debounce(function(){
   if(document.getElementById("trendChartHost")) renderTrendChart();
@@ -5945,6 +5971,77 @@ window.addEventListener("resize", debounce(function(){
   if(document.getElementById("qolChartHost")) renderQolChart();
   if(document.getElementById("weekdayChartHost")) renderWeekdayChart();
 }, 200));
+
+/* ── SEZIONE: Cronologia — sottoscheda "Al bisogno" (elenco e conteggi) ── */
+var prnHistFilterMed = "";
+function renderPrnHistory(data){
+  var filterHost=document.getElementById("prnHistFilterHost");
+  var summaryHost=document.getElementById("prnHistSummaryHost");
+  var listHost=document.getElementById("prnHistListHost");
+  if(!filterHost || !summaryHost || !listHost) return;
+
+  var entries=[];
+  (data.rows||[]).forEach(function(r){
+    var dayLog=(state.prnLog && state.prnLog[r.key]) ? state.prnLog[r.key] : {};
+    Object.keys(dayLog).forEach(function(medId){
+      var medObj = state.meds.filter(function(m){ return m.id===medId; })[0];
+      var v = medObj ? (activeMedVersion(medObj, r.key) || (medObj.versions && medObj.versions[medObj.versions.length-1])) : null;
+      var bname = (v && v.brand) ? v.brand : medId;
+      (dayLog[medId]||[]).forEach(function(e){
+        var t=prnTime(e);
+        if(!t) return;
+        entries.push({ key:r.key, dow:r.dow, day:r.day, month:r.month, medId:medId, brand:bname, time:t, motivo:prnMotivoLabel(e) });
+      });
+    });
+  });
+
+  // riepilogo conteggi per farmaco
+  var counts={};
+  entries.forEach(function(e){
+    if(!counts[e.medId]) counts[e.medId]={ brand:e.brand, n:0 };
+    counts[e.medId].n++;
+  });
+  var medIds=Object.keys(counts).sort(function(a,b){ return counts[b].n-counts[a].n; });
+
+  if(!entries.length){
+    filterHost.innerHTML="";
+    summaryHost.innerHTML="";
+    listHost.innerHTML='<div class="empty-state"><strong>Nessuna dose al bisogno registrata</strong>Nel periodo selezionato non risultano dosi "al bisogno" registrate.</div>';
+    return;
+  }
+
+  if(medIds.indexOf(prnHistFilterMed)===-1) prnHistFilterMed="";
+  var fHtml='<select id="prnHistFilterSelect" onchange="prnHistFilterMed=this.value;renderPrnHistory(historyData(histRange));" aria-label="Filtra per farmaco">';
+  fHtml+='<option value=""'+(prnHistFilterMed===""?' selected':'')+'>Tutti i farmaci</option>';
+  medIds.forEach(function(id){
+    fHtml+='<option value="'+esc(id)+'"'+(prnHistFilterMed===id?' selected':'')+'>'+esc(counts[id].brand)+'</option>';
+  });
+  fHtml+='</select>';
+  filterHost.innerHTML=fHtml;
+
+  var sHtml='<div class="hist-summary" style="margin-bottom:16px"><p class="lab">Quante volte nel periodo</p><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">';
+  medIds.forEach(function(id){
+    var active = (prnHistFilterMed===id);
+    sHtml+='<span class="pill" style="background:'+(active?'var(--teal)':'var(--teal-wash)')+';color:'+(active?'#fff':'var(--teal-deep)')+';font-size:13px;padding:6px 12px">'
+      +esc(counts[id].brand)+': '+counts[id].n+(counts[id].n===1?' volta':' volte')+'</span>';
+  });
+  sHtml+='</div></div>';
+  summaryHost.innerHTML=sHtml;
+
+  var filtered = prnHistFilterMed ? entries.filter(function(e){ return e.medId===prnHistFilterMed; }) : entries;
+  filtered.sort(function(a,b){ return (b.key+b.time).localeCompare(a.key+a.time); });
+
+  var lHtml='<div class="prn-hist-list">';
+  filtered.forEach(function(e){
+    lHtml+='<div class="prn-hist-row" style="display:flex;flex-wrap:wrap;gap:10px;align-items:baseline;padding:8px 0;border-bottom:1px solid var(--line)">'
+      +'<span style="font-variant-numeric:tabular-nums;color:var(--ink-soft);min-width:110px">'+esc(e.dow)+' '+e.day+'/'+e.month+' &middot; '+esc(e.time)+'</span>'
+      +'<span style="font-weight:600">'+esc(e.brand)+'</span>'
+      +(e.motivo ? '<span style="color:var(--ink-soft)">'+esc(e.motivo)+'</span>' : '<span style="color:var(--ink-soft);font-style:italic">motivo non specificato</span>')
+      +'</div>';
+  });
+  lHtml+='</div>';
+  listHost.innerHTML=lHtml;
+}
 
 /* ── SEZIONE: Stampa "Scheda terapia" e stampa "Riepilogo cronologia" ──── */
 function buildSheetHtml(){

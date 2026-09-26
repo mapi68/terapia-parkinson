@@ -28,7 +28,7 @@ In particolare, senza il permesso scritto dell'autore non è consentito:
 ## Funzionalità principali
 
 - **Giornata**: dosi previste per oggi, con orari, avvisi per i ritardi (notifica desktop e/o suono, configurabili) e possibilità di segnarle come prese, anche con quantità diversa dallo standard.
-- **Farmaci al bisogno (PRN)**: registro delle assunzioni senza orario fisso.
+- **Farmaci al bisogno (PRN)**: registro delle assunzioni senza orario fisso, con motivo facoltativo e storico consultabile per farmaco in Cronologia.
 - **Elenco farmaci**: ordinabile alfabeticamente o per prossima dose, con riepilogo automatico di dosi e milligrammi giornalieri per principio attivo.
 - **Diario sintomi**: annotazioni con orario, stato motorio, sintomi per categoria e note libere, collegate automaticamente alle dosi delle ore precedenti.
 - **Registro cadute**: form dedicato per orario, stato motorio, luogo, circostanza e conseguenza, incluso nelle stampe e nella Cronologia.
