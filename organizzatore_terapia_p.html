@@ -1143,7 +1143,7 @@ function toggleDbPanel(){
   </div>
 
   <div class="safety">
-    <strong>Avvertenza.</strong> Questo strumento serve solo a organizzare e ricordare una terapia gi&agrave; prescritta dal medico. Non sceglie farmaci, dosi o orari e non sostituisce il parere del neurologo. Inserisci esattamente ci&ograve; che &egrave; stato prescritto. Non saltare e non raddoppiare mai una dose di tua iniziativa. In caso di effetti indesiderati o peggioramenti, contatta il medico curante. I dati restano salvati solo su questo computer, in questo browser.
+    <strong>Avvertenza.</strong> Questo strumento serve solo a organizzare e ricordare una terapia gi&agrave; prescritta dal medico, comprese le dosi al bisogno: non sceglie farmaci, dosi, orari o motivi d'uso, e non sostituisce il parere del neurologo. Inserisci esattamente ci&ograve; che &egrave; stato prescritto. Non saltare e non raddoppiare mai una dose di tua iniziativa. L'indice di qualit&agrave; di vita &egrave; un promemoria orientativo calcolato dall'app, non una valutazione clinica. In caso di caduta con conseguenze serie, di effetti indesiderati o di peggioramenti, contatta subito il medico curante o il pronto soccorso. I dati restano salvati solo su questo computer, in questo browser.
   </div>
 </div>
 
@@ -1555,7 +1555,10 @@ var LUOGHI_CADUTA = {
   bagno:"Bagno",
   camera:"Camera da letto",
   cucina:"Cucina",
+  soggiorno:"Soggiorno / salotto",
+  corridoio:"Corridoio",
   scale:"Scale",
+  giardino:"Giardino / balcone",
   esterno:"Esterno / strada",
   altro:"Altro"
 };
@@ -1565,6 +1568,9 @@ var CIRCOSTANZE_CADUTA = {
   camminando:"Camminando",
   girandosi:"Girandosi / cambiando direzione",
   freezing:"Durante un blocco improvviso (freezing)",
+  inciampando:"Inciampando in un ostacolo",
+  equilibrio:"Perdita di equilibrio improvvisa, senza causa apparente",
+  vestendosi:"Vestendosi o spogliandosi",
   scale:"Salendo o scendendo le scale",
   altro:"Altro"
 };
@@ -1572,6 +1578,8 @@ var CONSEGUENZE_CADUTA = {
   nessuna:"Nessuna conseguenza",
   contusione:"Contusione / livido",
   ferita:"Piccola ferita",
+  dolore:"Dolore persistente, senza segni evidenti",
+  frattura:"Frattura sospetta o accertata",
   trauma:"Trauma importante",
   ps:"Portato al Pronto Soccorso"
 };
@@ -2066,7 +2074,7 @@ function updateClock(){
 /* ── SEZIONE: Intestazione "Oggi" e piano dosi del giorno (Hero) ────────── */
 function renderToday(){
   var badge = document.getElementById("versionBadge");
-  if(badge) badge.textContent = "v0.13.19";
+  if(badge) badge.textContent = "v0.13.22";
   var d=new Date();
   var giorni=["domenica","luned&igrave;","marted&igrave;","mercoled&igrave;","gioved&igrave;","venerd&igrave;","sabato"];
   var mesi=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
@@ -2984,7 +2992,7 @@ function printSheetNow(){
   var mesi=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
   var dataStr=giorni[now.getDay()]+" "+now.getDate()+" "+mesi[now.getMonth()]+" "+now.getFullYear();
   var patientStr=(state.patientName||"").trim() || "paziente non indicato";
-  var footerText=appName()+" \u2014 stampato "+dataStr+" \u2014 "+patientStr;
+  var footerText=appName()+" \u2014 Stampato "+dataStr+" \u2014 Paziente: "+patientStr;
   var styleEl=document.getElementById("printFooterStyle");
   if(!styleEl){
     styleEl=document.createElement("style");
@@ -3080,7 +3088,7 @@ function buildWeeklyDiarySheetHtml(weekOffset){
     var dayFalls=fallsForKey(key).slice().map(function(e){ e._kind="fall"; return e; });
     var entries=dayEntries.concat(dayFalls).sort(function(a,b){ return toMinutes(a.time)-toMinutes(b.time); });
     var dayLabel=giorni[d.getDay()]+" "+d.getDate()+" "+mesi[d.getMonth()];
-    var dayQol=dayEntries.length?qualityOfLifeScore(key):null;
+    var dayQol=entries.length?qualityOfLifeScore(key):null;
     html+='<div class="ps-diary-day">';
     html+='<h3 class="ps-diary-day-h">'+dayLabel+(dayQol!==null?' <span style="font-weight:400;font-size:0.85em;color:#555">&middot; Qualit\u00e0 di vita: '+qolStarsHtml(dayQol)+' '+dayQol.toFixed(1)+'/5 ('+qolLabel(dayQol)+')</span>':'')+'</h3>';
     if(entries.length===0){
@@ -3155,7 +3163,7 @@ function buildMonthlyDiarySheetHtml(year, month){
     var dayFalls=fallsForKey(key).slice().map(function(e){ e._kind="fall"; return e; });
     var entries=dayEntries.concat(dayFalls).sort(function(a,b){ return toMinutes(a.time)-toMinutes(b.time); });
     var dayLabel=giorni[d.getDay()]+" "+d.getDate()+" "+mesi[d.getMonth()];
-    var dayQol=dayEntries.length?qualityOfLifeScore(key):null;
+    var dayQol=entries.length?qualityOfLifeScore(key):null;
     html+='<div class="ps-diary-day">';
     html+='<h3 class="ps-diary-day-h">'+dayLabel+(dayQol!==null?' <span style="font-weight:400;font-size:0.85em;color:#555">&middot; Qualit\u00e0 di vita: '+qolStarsHtml(dayQol)+' '+dayQol.toFixed(1)+'/5 ('+qolLabel(dayQol)+')</span>':'')+'</h3>';
     if(entries.length===0){
@@ -4971,7 +4979,7 @@ function qualityOfLifeScore(dateKey){
   symptomImpact = Math.max(symptomImpact, -2.5); // evita che molti sintomi lievi sprofondino il punteggio in modo sproporzionato
 
   falls.forEach(function(f){
-    var severe = (f.conseguenza === "trauma" || f.conseguenza === "ps");
+    var severe = (f.conseguenza === "trauma" || f.conseguenza === "ps" || f.conseguenza === "frattura");
     fallImpact += severe ? FALL_IMPACT_SEVERE : FALL_IMPACT_BASE;
   });
   fallImpact = Math.max(fallImpact, FALL_IMPACT_MAX); // evita che molte cadute lievi sprofondino il punteggio in modo sproporzionato
@@ -5903,7 +5911,7 @@ function renderHistory(){
   summaryHtml+='<div class="hist-summary"><p class="lab">Qualit\u00e0 di vita media</p>';
   if(qolAvg!==null){
     summaryHtml+='<div class="big">'+qolAvg.toFixed(1)+'/5 '+qolStarsHtml(qolAvg, true)+'</div>';
-    summaryHtml+='<p class="sub">Media su '+qolValues.length+' giorn'+(qolValues.length===1?'o':'i')+' con almeno un\u2019annotazione nel diario, fascia \u201c'+qolLabel(qolAvg)+'\u201d.</p>';
+    summaryHtml+='<p class="sub">Media su '+qolValues.length+' giorn'+(qolValues.length===1?'o':'i')+' con almeno un\u2019annotazione nel diario o una caduta registrata, fascia \u201c'+qolLabel(qolAvg)+'\u201d.</p>';
   }else{
     summaryHtml+='<div class="big">&ndash;&ndash;</div>';
     summaryHtml+='<p class="sub">Nessuna annotazione nel diario nel periodo selezionato.</p>';
