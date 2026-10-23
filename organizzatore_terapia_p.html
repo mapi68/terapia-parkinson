@@ -2108,11 +2108,10 @@ function updateNextVisitBadge(){
   var today=new Date(); today.setHours(0,0,0,0);
   var daysLeft = Math.round((vDate-today)/86400000);
   if(daysLeft<0 || daysLeft>7){ el.style.display="none"; el.classList.remove("visible"); return; }
-  var when = daysLeft===0 ? "oggi" : (daysLeft===1 ? "domani" : "tra "+daysLeft+" gg");
+  var when = daysLeft===0 ? "oggi" : (daysLeft===1 ? "domani" : "tra "+daysLeft+" giorni");
   var whenLong = daysLeft===0 ? "oggi" : (daysLeft===1 ? "domani" : "tra "+daysLeft+" giorni");
   var label = "Visita "+when;
   var labelLong = "Visita "+whenLong;
-  if(v.time){ label += " \u00b7 "+v.time; labelLong += " alle "+v.time; }
   var docName = (typeof v.doctorIdx==="number" && state.doctors && state.doctors[v.doctorIdx]) ? (state.doctors[v.doctorIdx].name||"").trim() : "";
   if(docName){ label += " \u00b7 "+docName; labelLong += " \u00b7 "+docName; }
   lbl.textContent = label;
@@ -2158,7 +2157,7 @@ function updateClock(){
 /* ── SEZIONE: Intestazione "Oggi" e piano dosi del giorno (Hero) ────────── */
 function renderToday(){
   var badge = document.getElementById("versionBadge");
-  if(badge) badge.textContent = "v0.13.30";
+  if(badge) badge.textContent = "v0.13.31";
   var d=new Date();
   var giorni=["domenica","luned&igrave;","marted&igrave;","mercoled&igrave;","gioved&igrave;","venerd&igrave;","sabato"];
   var mesi=["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
