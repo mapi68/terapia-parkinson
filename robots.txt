@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mapi68.github.io/terapia-parkinson/sitemap.xml
